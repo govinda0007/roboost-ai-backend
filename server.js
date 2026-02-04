@@ -16,7 +16,7 @@ app.post("/chat", async (req, res) => {
   }
 
   try {
-    const apiKey = process.env.AIzaSyCn6Wf0G51tTmWcgJSSFrsdXGaL890zXiY;
+    const apiKey = process.env.AIzaSyBYby_YtET8cijf9cEcUp9wlDmYuqe_tdk;
 
     const response = await fetch(
       `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
