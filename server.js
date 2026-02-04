@@ -5,9 +5,17 @@ import dotenv from "dotenv";
 dotenv.config();
 
 const app = express();
+
+// ===== MIDDLEWARE =====
 app.use(cors());
 app.use(express.json());
 
+// ===== HEALTH CHECK (OPTIONAL) =====
+app.get("/", (req, res) => {
+  res.send("Roboost AI Backend is running");
+});
+
+// ===== CHAT ENDPOINT =====
 app.post("/chat", async (req, res) => {
   const userMessage = req.body.message;
 
@@ -16,18 +24,31 @@ app.post("/chat", async (req, res) => {
   }
 
   try {
-    const apiKey = process.env.AIzaSyBYby_YtET8cijf9cEcUp9wlDmYuqe_tdk;
-
     const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
+      "https://openrouter.ai/api/v1/chat/completions",
       {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Authorization": `Bearer ${process.env.OPENROUTER_API_KEY}`,
+          "Content-Type": "application/json",
+          "HTTP-Referer": "https://roboost.github.io", // optional
+          "X-Title": "Roboost AI Assistant"           // optional
+        },
         body: JSON.stringify({
-          contents: [
+          model: "openai/gpt-4o-mini",
+          messages: [
+            {
+              role: "system",
+              content: `
+You are Roboost AI, a professional assistant for Roboost Solutions.
+Roboost works in Industrial IoT, AI, Embedded Systems, Automation, and Cloud platforms.
+Answer clearly, professionally, and concisely.
+If asked about careers, guide users to the Careers page.
+              `
+            },
             {
               role: "user",
-              parts: [{ text: userMessage }]
+              content: userMessage
             }
           ]
         })
@@ -36,25 +57,20 @@ app.post("/chat", async (req, res) => {
 
     const data = await response.json();
 
-    console.log("FULL GEMINI RESPONSE:", JSON.stringify(data, null, 2));
-
     const reply =
-      data?.candidates?.[0]?.content?.parts?.[0]?.text;
-
-    if (!reply) {
-      return res.json({
-        reply: "Gemini returned no text response."
-      });
-    }
+      data?.choices?.[0]?.message?.content ||
+      "AI did not return a response.";
 
     res.json({ reply });
 
-  } catch (err) {
-    console.error("GEMINI ERROR:", err);
-    res.json({ reply: "Gemini API error occurred." });
+  } catch (error) {
+    console.error("AI ERROR:", error);
+    res.json({ reply: "AI service error. Please try again." });
   }
 });
 
-app.listen(3000, () => {
-  console.log("Roboost AI backend running on port 3000");
+// ===== START SERVER =====
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+  console.log(`Roboost AI backend running on port ${PORT}`);
 });
